@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /tmp/build
 
-COPY requirements.txt ./requirements.txt
+COPY scripts/requirements.txt ./requirements.txt
 
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip==25.0.1 setuptools==75.8.0 wheel==0.45.1 \
@@ -35,4 +35,4 @@ COPY --chown=app:app . /app
 
 USER app
 
-CMD ["python", "transcribir_video.py", "--help"]
+CMD ["python", "-m", "scripts.transcribir_video", "--help"]

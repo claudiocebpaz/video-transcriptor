@@ -46,11 +46,12 @@ Thumbs.db
 skills/
 .skills/
 
-# Agent configs (optional - add if needed)
+# Agent tool directories (too large/ephemeral for git)
 .agent/
 .agents/
 .claude/
 .codebuddy/
+.commandcode/
 .continue/
 .crush/
 .factory/
@@ -71,3 +72,10 @@ skills/
 .trae/
 .windsurf/
 .zencoder/
+
+# ML Model cache (too large for git)
+.cache/
+
+# Media files
+video_entrada/
+salida/

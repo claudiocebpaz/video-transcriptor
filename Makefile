@@ -13,6 +13,7 @@ IMAGE := $(IMAGE_NAME):$(IMAGE_TAG)
 CONTAINER_NAME := video-extractor-dev
 DOCKERFILE_PATH := scripts/Dockerfile
 SCRIPT_PATH := scripts/transcribir_video.py
+SCRIPT_MODULE := scripts.transcribir_video
 DEFAULT_VIDEO_DIR := ./video_entrada
 DEFAULT_OUTPUT_PREFIX := salida/transcripcion
 DOCKER_BUILD_BASE := docker build -f $(DOCKERFILE_PATH) -t $(IMAGE)
@@ -82,13 +83,13 @@ install-dev: ## First-time setup (Docker-only)
 .PHONY: dev
 dev: ## Transcribe video quickly with default config
 	@echo "$(GREEN)🎙️ Transcribiendo video (modo dev)...$(NC)"
-	@$(DOCKER_RUN_BASE) python $(SCRIPT_PATH) $(if $(strip $(VIDEO)),"$(VIDEO)",) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
+	@$(DOCKER_RUN_BASE) python -m $(SCRIPT_MODULE) $(if $(strip $(VIDEO)),"$(VIDEO)",) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
 
 .PHONY: transcribe
 transcribe: ## Full transcribe command with MODEL/LANGUAGE
 	@echo "$(GREEN)🎙️ Transcribiendo video con opciones...$(NC)"
 	@$(DOCKER_RUN_BASE) \
-		python $(SCRIPT_PATH) $(if $(strip $(VIDEO)),"$(VIDEO)",) --model $(WHISPER_MODEL) --language $(LANGUAGE) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
+		python -m $(SCRIPT_MODULE) $(if $(strip $(VIDEO)),"$(VIDEO)",) --model $(WHISPER_MODEL) --language $(LANGUAGE) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
 
 # ================================
 # Quality (Docker-only)
