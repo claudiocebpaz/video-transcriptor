@@ -9,7 +9,7 @@ Proyecto Python para transcribir video con `ffmpeg` + `faster-whisper`.
 - Transcribe por segmentos.
 - Exporta `TXT`, `SRT` y `JSON`.
 
-**Archivo principal**: `transcribir_video.py`.
+**Archivo principal**: `scripts/transcribir_video.py`.
 
 ---
 
@@ -20,10 +20,10 @@ Este repositorio se opera en modo **Docker-only**.
 ### Prohibido en host
 
 ```bash
-python transcribir_video.py <video>
-pip install -r requirements.txt
-ruff check transcribir_video.py
-mypy transcribir_video.py
+python scripts/transcribir_video.py <video>
+pip install -r scripts/requirements.txt
+ruff check scripts/transcribir_video.py
+mypy scripts/transcribir_video.py
 ```
 
 ### Obligatorio (siempre en contenedor)
@@ -65,7 +65,7 @@ make install-dev
 
 ```bash
 make dev VIDEO=./sample.mp4
-make transcribe VIDEO=./sample.mp4 MODEL=small LANGUAGE=es
+make transcribe VIDEO=./video_entrada/sample.mp4 WHISPER_MODEL=small LANGUAGE=es
 ```
 
 ### Calidad
@@ -144,3 +144,4 @@ No crear tests automatizados salvo pedido explícito.
 - Comandos funcionan vía Docker (`make help` + targets principales).
 - Lint y typecheck pasan dentro de contenedor.
 - Flujo de transcripción ejecuta sin depender de Python en host.
+- Convención de raíz consistente: archivos de agentes IA (`AGENTS.md`, `agent.md`, equivalentes) y entorno (`.env`, `.env.example`) permanecen en raíz.

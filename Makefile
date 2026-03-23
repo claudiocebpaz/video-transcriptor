@@ -11,11 +11,18 @@ IMAGE_NAME := video-extractor
 IMAGE_TAG ?= dev
 IMAGE := $(IMAGE_NAME):$(IMAGE_TAG)
 CONTAINER_NAME := video-extractor-dev
+DOCKERFILE_PATH := scripts/Dockerfile
+SCRIPT_PATH := scripts/transcribir_video.py
+DEFAULT_VIDEO_DIR := ./video_entrada
+DEFAULT_OUTPUT_PREFIX := salida/transcripcion
+DOCKER_BUILD_BASE := docker build -f $(DOCKERFILE_PATH) -t $(IMAGE)
 DOCKER_RUN_BASE := docker run --rm -v "$(CURDIR)":/app -w /app $(IMAGE)
 VIDEO ?=
-MODEL ?= small
+WHISPER_MODEL ?= small
+DEEPSEEK_MODEL ?= deepseek-chat
 LANGUAGE ?= es
 DEEPSEEK_APIKEY ?=
+DOCKER_BUILD_EXTRA_FLAGS ?=
 
 # Color codes
 GREEN := \033[0;32m
@@ -27,11 +34,18 @@ NC := \033[0m
 # Docker image lifecycle
 # ================================
 
-.PHONY: up
-up: ## Build project Docker image
+.PHONY: build
+build: ## Build project Docker image
 	@echo "$(GREEN)🔨 Construyendo imagen Docker...$(NC)"
-	@docker build -t $(IMAGE) .
+	@$(DOCKER_BUILD_BASE) $(DOCKER_BUILD_EXTRA_FLAGS) .
 	@echo "$(GREEN)✅ Imagen lista: $(IMAGE)$(NC)"
+
+.PHONY: rebuild
+rebuild: ## Build project Docker image from scratch (no cache)
+	@$(MAKE) build DOCKER_BUILD_EXTRA_FLAGS="--no-cache"
+
+.PHONY: up
+up: build ## Build project Docker image
 
 .PHONY: down
 down: ## Remove project image (optional cleanup)
@@ -68,13 +82,13 @@ install-dev: ## First-time setup (Docker-only)
 .PHONY: dev
 dev: ## Transcribe video quickly with default config
 	@echo "$(GREEN)🎙️ Transcribiendo video (modo dev)...$(NC)"
-	@$(DOCKER_RUN_BASE) python transcribir_video.py $(if $(strip $(VIDEO)),$(VIDEO),)
+	@$(DOCKER_RUN_BASE) python $(SCRIPT_PATH) $(if $(strip $(VIDEO)),"$(VIDEO)",) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
 
 .PHONY: transcribe
 transcribe: ## Full transcribe command with MODEL/LANGUAGE
 	@echo "$(GREEN)🎙️ Transcribiendo video con opciones...$(NC)"
 	@$(DOCKER_RUN_BASE) \
-		python transcribir_video.py $(if $(strip $(VIDEO)),$(VIDEO),) --model $(MODEL) --language $(LANGUAGE)
+		python $(SCRIPT_PATH) $(if $(strip $(VIDEO)),"$(VIDEO)",) --model $(WHISPER_MODEL) --language $(LANGUAGE) --output-prefix $(DEFAULT_OUTPUT_PREFIX)
 
 # ================================
 # Quality (Docker-only)
@@ -83,17 +97,17 @@ transcribe: ## Full transcribe command with MODEL/LANGUAGE
 .PHONY: format
 format: ## Run ruff format
 	@echo "$(GREEN)🎨 Formateando código...$(NC)"
-	@$(DOCKER_RUN_BASE) ruff format transcribir_video.py
+	@$(DOCKER_RUN_BASE) ruff format $(SCRIPT_PATH) tests/test_resolver_video_entrada.py
 
 .PHONY: lint
 lint: ## Run ruff check
 	@echo "$(GREEN)✨ Ejecutando lint...$(NC)"
-	@$(DOCKER_RUN_BASE) ruff check transcribir_video.py
+	@$(DOCKER_RUN_BASE) ruff check $(SCRIPT_PATH) tests/test_resolver_video_entrada.py
 
 .PHONY: typecheck
 typecheck: ## Run mypy
 	@echo "$(GREEN)🔎 Ejecutando typecheck...$(NC)"
-	@$(DOCKER_RUN_BASE) mypy --ignore-missing-imports transcribir_video.py
+	@$(DOCKER_RUN_BASE) mypy --ignore-missing-imports $(SCRIPT_PATH)
 
 .PHONY: test
 test: check unit-tests ## Run checks + automated tests
@@ -141,9 +155,11 @@ help: ## Show available commands
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "$(GREEN)  ⚙️ VARIABLES CLAVE$(NC)"
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
-	@echo "  VIDEO=$(VIDEO)        Ruta del video (opcional). Si se omite, se autodetecta en raíz"
-	@echo "  MODEL=$(MODEL)        Modelo Whisper (ej: tiny, base, small, medium, large-v3)"
+	@echo "  VIDEO=$(VIDEO)        Ruta del video (opcional). Si se omite, se autodetecta en $(DEFAULT_VIDEO_DIR)"
+	@echo "  WHISPER_MODEL=$(WHISPER_MODEL)  Modelo Whisper (ej: tiny, base, small, medium, large-v3)"
+	@echo "  DEEPSEEK_MODEL=$(DEEPSEEK_MODEL) Modelo DeepSeek (ej: deepseek-chat, deepseek-coder)"
 	@echo "  LANGUAGE=$(LANGUAGE)  Idioma esperado (ej: es, en)"
+	@echo "  DEFAULT_OUTPUT_PREFIX=$(DEFAULT_OUTPUT_PREFIX)  Prefijo de salida por defecto"
 	@echo "  IMAGE_TAG=$(IMAGE_TAG)  Tag de la imagen Docker"
 	@echo "  DEEPSEEK_APIKEY=$(DEEPSEEK_APIKEY)  API key opcional (cargable desde .env)"
 	@echo ""
@@ -182,10 +198,10 @@ help: ## Show available commands
 	@echo "$(GREEN)  💡 QUICK START (copiar/pegar)$(NC)"
 	@echo "$(GREEN)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo "  make up"
-	@echo "  make dev VIDEO=./sample.mp4"
+	@echo "  make dev VIDEO=./video_entrada/sample.mp4"
 	@echo "  make dev VIDEO="
-	@echo "  make transcribe VIDEO=./videos/entrevista.mp4 MODEL=medium LANGUAGE=es"
-	@echo "  make transcribe VIDEO= MODEL=small LANGUAGE=es"
+	@echo "  make transcribe VIDEO=./video_entrada/entrevista.mp4 WHISPER_MODEL=medium LANGUAGE=es"
+	@echo "  make transcribe VIDEO= WHISPER_MODEL=small LANGUAGE=es"
 	@echo "  make check"
 	@echo "  make test"
 	@echo ""
